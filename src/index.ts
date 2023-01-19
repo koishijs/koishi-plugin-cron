@@ -3,41 +3,24 @@ import { schedule } from 'node-cron'
 
 declare module 'koishi' {
   interface Context {
-    cron: Cron
+    cron(input: string, callback: () => void): () => boolean
   }
 }
 
 class Cron extends Service {
+  static methods = ['cron']
+
   constructor(ctx: Context, private config: Cron.Config) {
-    super(ctx, 'cron')
+    super(ctx, 'cron', true)
   }
 
-  schedule(input: string | Cron.Input, callback: () => void) {
-    if (typeof input !== 'string') {
-      input = [
-        input.second || '*',
-        input.minute || '*',
-        input.hour || '*',
-        input.date || '*',
-        input.month || '*',
-        input.day || '*',
-      ].join(' ')
-    }
+  cron(input: string, callback: () => void) {
     const task = schedule(input, callback)
     return this.caller.collect('cron', () => (task.stop(), true))
   }
 }
 
 namespace Cron {
-  export interface Input {
-    second?: number | string
-    minute?: number | string
-    hour?: number | string
-    day?: number | string
-    date?: number | string
-    month?: number | string
-  }
-
   export interface Config {}
 
   export const Config: Schema<Config> = Schema.object({})
