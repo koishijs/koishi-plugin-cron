@@ -8,10 +8,10 @@ declare module 'koishi' {
 }
 
 class Cron extends Service {
-  static methods = ['cron']
+  static readonly methods = ['cron']
 
   constructor(ctx: Context, private config: Cron.Config) {
-    super(ctx, 'cron', true)
+    super(ctx, '__cron__', true)
   }
 
   cron(input: string, callback: () => void) {
@@ -25,5 +25,7 @@ namespace Cron {
 
   export const Config: Schema<Config> = Schema.object({})
 }
+
+Context.service('__cron__', Cron)
 
 export default Cron
