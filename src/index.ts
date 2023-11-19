@@ -1,31 +1,46 @@
-import { Context, Schema, Service } from 'koishi'
-import { schedule } from 'node-cron'
+import { Context, Schema } from 'koishi'
+import { CronExpression, parseExpression } from 'cron-parser'
 
 declare module 'koishi' {
   interface Context {
-    cron(input: string, callback: () => void): () => boolean
+    cron(input: string, callback: () => void): () => void
   }
 }
 
-class Cron extends Service {
-  static readonly methods = ['cron']
+class Task {
+  public timer: NodeJS.Timeout
 
-  constructor(ctx: Context, private config: Cron.Config) {
-    super(ctx, '__cron__', true)
+  constructor(public expr: CronExpression, public callback: () => void) {
+    this.start()
   }
 
-  cron(input: string, callback: () => void) {
-    const task = schedule(input, callback)
-    return this.caller.collect('cron', () => (task.stop(), true))
+  start() {
+    this.timer = setTimeout(() => {
+      this.callback()
+      this.start()
+    }, this.expr.next().getTime() - Date.now())
+  }
+
+  stop() {
+    clearTimeout(this.timer)
   }
 }
 
-namespace Cron {
-  export interface Config {}
+export const name = 'cron'
 
-  export const Config: Schema<Config> = Schema.object({})
+export interface Config {}
+
+export const Config: Schema<Config> = Schema.object({})
+
+export function apply(ctx: Context) {
+  ctx.root.provide('cron')
+
+  ctx.cron = function cron(this: Context, input: string, callback: () => void) {
+    const task = new Task(parseExpression(input), callback)
+    return this.collect('cron', () => task.stop())
+  }
+
+  ctx.on('dispose', () => {
+    ctx.cron = null
+  })
 }
-
-Context.service('__cron__', Cron)
-
-export default Cron

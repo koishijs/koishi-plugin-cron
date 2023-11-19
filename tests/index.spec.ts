@@ -2,7 +2,7 @@ import { Context } from 'koishi'
 import { expect } from 'chai'
 import { install, InstalledClock } from '@sinonjs/fake-timers'
 import * as jest from 'jest-mock'
-import cron from '../src'
+import * as cron from '../src'
 
 const ctx = new Context()
 
@@ -23,7 +23,10 @@ after(async () => {
 
 describe('koishi-plugin-cron', () => {
   it('basic support', async () => {
-    ctx.cron('* * * * *', callback)
+    const dispose = ctx.cron('* * * * *', callback)
+    clock.tick(120 * 1000)
+    expect(callback.mock.calls).to.have.length(2)
+    dispose()
     clock.tick(120 * 1000)
     expect(callback.mock.calls).to.have.length(2)
   })
