@@ -10,14 +10,18 @@ declare module 'koishi' {
 class Task {
   public timer: NodeJS.Timeout
 
-  constructor(public expr: CronExpression, public callback: () => void) {
+  constructor(public ctx: Context, public expr: CronExpression, public callback: () => void) {
     this.start()
   }
 
   start() {
-    this.timer = setTimeout(() => {
-      this.callback()
+    this.timer = setTimeout(async () => {
       this.start()
+      try {
+        await this.callback()
+      } catch (error) {
+        this.ctx.logger('cron').warn(error)
+      }
     }, this.expr.next().getTime() - Date.now())
   }
 
@@ -36,7 +40,7 @@ export function apply(ctx: Context) {
   ctx.root.provide('cron')
 
   ctx.cron = function cron(this: Context, input: string, callback: () => void) {
-    const task = new Task(parseExpression(input), callback)
+    const task = new Task(this, parseExpression(input), callback)
     return this.collect('cron', () => task.stop())
   }
 
