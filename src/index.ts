@@ -37,14 +37,10 @@ export interface Config {}
 export const Config: Schema<Config> = Schema.object({})
 
 export function apply(ctx: Context) {
-  ctx.root.provide('cron')
+  ctx.provide('cron')
 
   ctx.cron = function cron(this: Context, input: string, callback: () => void) {
     const task = new Task(this, parseExpression(input), callback)
     return this.collect('cron', () => task.stop())
   }
-
-  ctx.on('dispose', () => {
-    ctx.cron = null
-  })
 }
