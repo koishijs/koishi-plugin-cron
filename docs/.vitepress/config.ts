@@ -16,6 +16,7 @@ export default defineConfig({
       text: '指南',
       items: [
         { text: '介绍', link: './' },
+        { text: '示例', link: './example' },
         { text: '配置项', link: './config' },
       ],
     }, {
